@@ -678,6 +678,23 @@ onMounted(() => {
                       El portafolio no cumple simultáneamente con los criterios de desviación mínima y costo máximo definidos para el MVP.
                     </template>
                   </p>
+
+                  <div
+                      v-if="shouldNotify"
+                      class="mt-3 flex max-w-2xl items-start gap-2 rounded-lg border border-emerald-200 bg-white/60 px-3 py-2.5"
+                  >
+                    <span class="mt-0.5 text-sm">🔔</span>
+
+                    <div>
+                      <p class="text-sm font-semibold text-emerald-800">
+                        Condición de alerta detectada
+                      </p>
+
+                      <p class="mt-0.5 text-xs leading-5 text-emerald-700">
+                        El portafolio cumple los criterios definidos para generar una alerta de rebalanceo.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
