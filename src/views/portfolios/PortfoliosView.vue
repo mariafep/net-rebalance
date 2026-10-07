@@ -11,6 +11,7 @@ import { portfolioService } from '../../services/portfolio.service'
 import { brokerService } from '../../services/broker.service'
 import { assetService } from '../../services/asset.service'
 import { useAuth } from '../../composables/useAuth'
+import { findPresetByName } from '../../constants/brokerPresets'
 
 import type {
   Portfolio,
@@ -154,6 +155,21 @@ function getBrokerName(
               broker.id === brokerId,
       )?.name ?? 'No disponible'
   )
+}
+
+function getBrokerBadge(brokerId: string) {
+  const broker = brokers.value.find((b) => b.id === brokerId)
+  if (!broker) return null
+
+  const preset = findPresetByName(broker.name)
+  const isNational = preset?.category === 'national' || broker.currency === 'PEN'
+
+  return {
+    label: isNational ? '🇵🇪 BVL' : '🌎 Int.',
+    badgeClass: isNational
+      ? 'border-amber-200 bg-amber-50 text-amber-700'
+      : 'border-blue-200 bg-blue-50 text-blue-700',
+  }
 }
 
 function getPortfolioAssets(
@@ -670,11 +686,18 @@ onMounted(() => {
                 <td
                     class="px-5 py-4 text-slate-600"
                 >
-                  {{
-                    getBrokerName(
-                        portfolio.broker_id,
-                    )
-                  }}
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium text-slate-800">
+                      {{ getBrokerName(portfolio.broker_id) }}
+                    </span>
+                    <span
+                      v-if="getBrokerBadge(portfolio.broker_id)"
+                      class="inline-flex rounded-md border px-1.5 py-0.5 text-[10px] font-semibold"
+                      :class="getBrokerBadge(portfolio.broker_id)!.badgeClass"
+                    >
+                      {{ getBrokerBadge(portfolio.broker_id)!.label }}
+                    </span>
+                  </div>
                 </td>
 
                 <!-- Moneda -->
@@ -968,7 +991,7 @@ onMounted(() => {
             <label
                 class="mb-2 block text-sm font-medium text-slate-700"
             >
-              Broker
+              Broker vinculado
             </label>
 
             <select
@@ -981,9 +1004,13 @@ onMounted(() => {
                   :key="broker.id"
                   :value="broker.id"
               >
-                {{ broker.name }}
+                {{ broker.name }} ({{ broker.currency }})
               </option>
             </select>
+
+            <p class="mt-1.5 text-xs text-slate-400">
+              💡 Podrás configurar activos compatibles con este broker (acciones BVL o ETFs de EE.UU.).
+            </p>
           </div>
 
           <!-- Moneda -->
