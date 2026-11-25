@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { profileService } from '../services/profile.service'
@@ -11,6 +11,14 @@ const { user, logout } = useAuth()
 
 const fullName = ref('')
 const loggingOut = ref(false)
+const mobileMenuOpen = ref(false)
+
+watch(
+  () => route.fullPath,
+  () => {
+    mobileMenuOpen.value = false
+  },
+)
 
 function isActive(path: string) {
   return route.path === path || route.path.startsWith(`${path}/`)
@@ -68,13 +76,21 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50">
+  <div class="min-h-screen overflow-x-hidden bg-slate-50">
+    <!-- Backdrop móvil -->
+    <div
+        v-if="mobileMenuOpen"
+        class="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-xs lg:hidden"
+        @click="mobileMenuOpen = false"
+    />
+
     <!-- SIDEBAR -->
     <aside
-        class="fixed inset-y-0 left-0 z-20 flex w-64 flex-col border-r border-slate-200 bg-white"
+        class="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200 bg-white transition-transform duration-200 lg:z-20 lg:translate-x-0"
+        :class="mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'"
     >
       <!-- Logo -->
-      <div class="flex h-16 items-center border-b border-slate-200 px-6">
+      <div class="flex h-16 items-center justify-between border-b border-slate-200 px-6">
         <RouterLink
             to="/dashboard"
             class="flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900"
@@ -89,6 +105,17 @@ onMounted(() => {
             Net<span class="text-teal-600">Rebalance</span>
           </span>
         </RouterLink>
+
+        <button
+            type="button"
+            class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 lg:hidden"
+            aria-label="Cerrar menú"
+            @click="mobileMenuOpen = false"
+        >
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
 
       <!-- Navegación -->
@@ -259,30 +286,43 @@ onMounted(() => {
     </aside>
 
     <!-- CONTENIDO -->
-    <div class="pl-64">
+    <div class="min-w-0 lg:pl-64">
       <!-- Header -->
       <header
-          class="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8"
+          class="sticky top-0 z-10 flex h-16 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 sm:px-6 lg:px-8"
       >
         <!-- Lado izquierdo -->
-        <p class="text-sm text-slate-500">
-          Gestión de portafolio
-        </p>
+        <div class="flex min-w-0 items-center gap-3">
+          <button
+              type="button"
+              class="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50 lg:hidden"
+              aria-label="Abrir menú"
+              @click="mobileMenuOpen = true"
+          >
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+
+          <p class="truncate text-sm font-medium text-slate-600">
+            Gestión de portafolio
+          </p>
+        </div>
 
         <!-- Usuario -->
         <RouterLink
             to="/profile"
-            class="flex items-center gap-3 rounded-lg px-2 py-1.5 transition hover:bg-slate-50"
+            class="flex shrink-0 items-center gap-2.5 rounded-lg px-2 py-1.5 transition hover:bg-slate-50 sm:gap-3"
         >
           <!-- Avatar -->
           <div
-              class="flex h-9 w-9 items-center justify-center rounded-full bg-teal-100 text-xs font-semibold text-teal-700"
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-teal-100 text-xs font-semibold text-teal-700"
           >
             {{ initials }}
           </div>
 
           <!-- Nombre -->
-          <div class="text-left">
+          <div class="hidden text-left sm:block">
             <p class="text-sm font-medium text-slate-800">
               {{ fullName || 'Usuario' }}
             </p>
@@ -308,8 +348,8 @@ onMounted(() => {
       </header>
 
       <!-- Página -->
-      <main class="p-8">
-        <div class="mx-auto max-w-7xl">
+      <main class="min-w-0 p-4 sm:p-6 lg:p-8">
+        <div class="mx-auto max-w-7xl min-w-0">
           <RouterView />
         </div>
       </main>

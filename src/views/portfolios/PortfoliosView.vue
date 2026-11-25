@@ -441,7 +441,7 @@ onMounted(() => {
   <section>
     <!-- Header -->
     <div
-        class="flex items-start justify-between"
+        class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
     >
       <div>
         <h1
@@ -519,7 +519,7 @@ onMounted(() => {
       <template v-else>
         <!-- Buscador y filtro -->
         <div
-            class="mt-8 flex items-center gap-4"
+            class="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4"
         >
           <div
               class="relative flex-1"
@@ -552,7 +552,7 @@ onMounted(() => {
 
           <select
               v-model="statusFilter"
-              class="w-52 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100 sm:w-52"
           >
             <option value="all">
               Todos los estados
@@ -599,13 +599,13 @@ onMounted(() => {
         <!-- Tabla -->
         <div
             v-else
-            class="mt-6 overflow-visible rounded-xl border border-slate-200 bg-white"
+            class="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white"
         >
           <div
               class="overflow-x-auto"
           >
             <table
-                class="w-full min-w-[1050px] text-left text-sm"
+                class="w-full min-w-[900px] text-left text-sm"
             >
               <thead
                   class="bg-slate-50"
@@ -882,7 +882,7 @@ onMounted(() => {
               filteredPortfolios.length >
               0
             "
-              class="flex items-center justify-between border-t border-slate-200 px-5 py-4"
+              class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-5 py-4"
           >
             <p
                 class="text-sm text-slate-500"

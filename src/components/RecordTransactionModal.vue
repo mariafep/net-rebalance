@@ -154,7 +154,7 @@ async function handleSubmit() {
         </div>
 
         <!-- Cantidad y Precio -->
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label class="mb-1.5 block text-xs font-medium text-slate-700">
               Cantidad nominal
@@ -183,7 +183,7 @@ async function handleSubmit() {
         </div>
 
         <!-- Fecha y Comisión -->
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label class="mb-1.5 block text-xs font-medium text-slate-700">
               Fecha de operación

@@ -266,7 +266,7 @@ onMounted(() => {
               {{ riskProfileInfo.description }}
             </p>
 
-            <div class="grid grid-cols-3 gap-3 border-t border-slate-100 pt-4 text-xs">
+            <div class="grid grid-cols-1 gap-3 border-t border-slate-100 pt-4 text-xs sm:grid-cols-3">
               <div>
                 <span class="block text-slate-400">Horizonte</span>
                 <span class="mt-0.5 block font-semibold text-slate-800">

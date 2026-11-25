@@ -442,9 +442,9 @@ onMounted(() => {
     <template v-else>
       <!-- Selector -->
       <div
-          class="mt-8 flex items-end justify-between rounded-xl border border-slate-200 bg-white p-5"
+          class="mt-8 flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-5 sm:flex-row sm:items-end sm:justify-between"
       >
-        <div class="w-full max-w-sm">
+        <div class="w-full sm:max-w-sm">
           <label
               class="mb-2 block text-sm font-medium text-slate-700"
           >
@@ -467,7 +467,7 @@ onMounted(() => {
 
         <div
             v-if="selectedPortfolio"
-            class="ml-6 flex flex-wrap items-center justify-end gap-4"
+            class="flex flex-wrap items-center justify-between gap-3 sm:ml-6 sm:justify-end sm:gap-4"
         >
           <button
               v-if="selectedPortfolio.status === 'active'"
@@ -653,7 +653,7 @@ onMounted(() => {
               class="mt-6 rounded-xl border border-slate-200 bg-white p-6"
           >
             <div
-                class="flex items-center justify-between gap-8"
+                class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-8"
             >
               <div>
                 <p
@@ -687,7 +687,7 @@ onMounted(() => {
 
           <!-- Distribución y comparación -->
           <div
-              class="mt-6 grid grid-cols-2 gap-6"
+              class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2"
           >
             <!-- Distribución -->
             <div
