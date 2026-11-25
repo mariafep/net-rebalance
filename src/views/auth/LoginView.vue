@@ -61,10 +61,20 @@ async function handleRequestReset() {
     await requestPasswordReset(cleanEmail)
     successMessage.value =
       'Te enviamos un enlace de recuperación a tu correo. Revisa tu bandeja de entrada o spam.'
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error al solicitar recuperación:', error)
-    errorMessage.value =
-      'No pudimos enviar el correo de recuperación. Verifica la dirección e intenta nuevamente.'
+    const errObj = error as { code?: string; status?: number; message?: string }
+    if (
+      errObj?.code === 'over_email_send_rate_limit' ||
+      errObj?.status === 429 ||
+      errObj?.message?.toLowerCase().includes('rate limit')
+    ) {
+      errorMessage.value =
+        'Se alcanzó el límite temporal de envío de correos de Supabase. Espera unos minutos antes de solicitar otro enlace.'
+    } else {
+      errorMessage.value =
+        'No pudimos enviar el correo de recuperación. Verifica la dirección e intenta nuevamente.'
+    }
   } finally {
     loading.value = false
   }

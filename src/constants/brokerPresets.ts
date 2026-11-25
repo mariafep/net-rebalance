@@ -174,6 +174,20 @@ export const BROKER_PRESETS: BrokerPreset[] = [
       'Broker estadounidense (FINRA/SIPC) diseñado para la comunidad hispanohablante para invertir en Wall Street sin comisión fija.',
     features: ['Sin comisiones fijas', 'Regulado SEC y FINRA', 'Soporte 100% en español'],
   },
+  {
+    id: 'xtb',
+    name: 'XTB',
+    category: 'international',
+    categoryLabel: 'Internacional (Europa / Global)',
+    country: 'Global',
+    currency: 'USD',
+    fixed_commission: 0.00,
+    percentage_commission: 0.00,
+    spread_percentage: 0.10,
+    description:
+      'Broker global regulado con 0% de comisión en acciones y ETFs al contado (hasta 100k EUR/mes), muy utilizado en Perú para ETFs UCITS (LSE) y acciones de EE. UU.',
+    features: ['0% comisión en acciones/ETFs', 'Acceso a LSE (UCITS) y EE. UU.', 'Acciones fraccionadas'],
+  },
 ]
 
 export const NATIONAL_BROKERS = BROKER_PRESETS.filter(
