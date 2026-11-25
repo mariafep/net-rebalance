@@ -27,6 +27,11 @@ const router = createRouter({
                 requiresGuest: true,
             },
         },
+        {
+            path: '/reset-password',
+            name: 'reset-password',
+            component: () => import('../views/auth/ResetPasswordView.vue'),
+        },
 
         // Aplicación autenticada
         {
@@ -64,6 +69,11 @@ const router = createRouter({
                     component: () => import('../views/brokers/BrokersView.vue'),
                 },
                 {
+                    path: 'alerts',
+                    name: 'alerts',
+                    component: () => import('../views/AlertsView.vue'),
+                },
+                {
                     path: 'profile',
                     name: 'profile',
                     component: () => import('../views/ProfileView.vue'),
@@ -74,10 +84,14 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
-    const { user, loading, initializeAuth } = useAuth()
+    const { user, loading, isRecoveryMode, initializeAuth } = useAuth()
 
     if (loading.value) {
         await initializeAuth()
+    }
+
+    if (isRecoveryMode.value && to.name !== 'reset-password') {
+        return { name: 'reset-password' }
     }
 
     if (to.meta.requiresAuth && !user.value) {

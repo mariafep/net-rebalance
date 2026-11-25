@@ -6,10 +6,13 @@ import { portfolioService } from '../../services/portfolio.service'
 import { brokerService } from '../../services/broker.service'
 import { assetService } from '../../services/asset.service'
 import { priceService } from '../../services/price.service'
+import { profileService } from '../../services/profile.service'
+import { useAuth } from '../../composables/useAuth'
 import { findPresetByName } from '../../constants/brokerPresets'
 
 import type { Portfolio } from '../../types/portfolio'
 import type { Broker } from '../../types/broker'
+import type { Profile } from '../../types/profile'
 import type {
   Asset,
   PortfolioAsset,
@@ -17,9 +20,11 @@ import type {
 } from '../../types/asset'
 
 const route = useRoute()
+const { user } = useAuth()
 
 const portfolio = ref<Portfolio | null>(null)
 const broker = ref<Broker | null>(null)
+const userProfile = ref<Profile | null>(null)
 
 const assets = ref<Asset[]>([])
 const portfolioAssets = ref<PortfolioAsset[]>([])
@@ -198,15 +203,18 @@ async function loadPortfolio() {
       assetData,
       portfolioAssetData,
       latestPriceData,
+      profileData,
     ] = await Promise.all([
       portfolioService.getPortfolioById(portfolioId.value),
       brokerService.getBrokers(),
       assetService.getAssets(),
       assetService.getPortfolioAssets(portfolioId.value),
       priceService.getLatestAssetPrices(),
+      user.value ? profileService.getProfile(user.value.id).catch(() => null) : Promise.resolve(null),
     ])
 
     portfolio.value = portfolioData
+    userProfile.value = profileData
 
     broker.value =
       brokerData.find((item) => item.id === portfolioData.broker_id) ?? null
@@ -554,6 +562,105 @@ onMounted(() => {
 
             <p class="mt-1 text-sm font-medium text-slate-800">
               {{ portfolio.status === 'active' ? 'Activo (Monitoreado)' : 'Borrador (En configuración)' }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Plantillas Core & Satellite sugeridas -->
+      <div class="mt-6 rounded-xl border border-slate-200 bg-white p-6">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 class="font-semibold text-slate-900">
+              Plantillas Core & Satellite sugeridas
+            </h2>
+            <p class="mt-0.5 text-sm text-slate-500">
+              Guía visual para distribuir tus pesos objetivo entre activos base (Core) y tácticos (Satellite).
+            </p>
+          </div>
+
+          <RouterLink
+            v-if="!userProfile?.risk_profile"
+            to="/profile"
+            class="text-xs font-semibold text-teal-600 hover:underline"
+          >
+            Completa tu perfil de riesgo →
+          </RouterLink>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div
+            class="rounded-xl border p-4 transition"
+            :class="
+              userProfile?.risk_profile === 'conservative'
+                ? 'border-blue-400 bg-blue-50/50 ring-1 ring-blue-200'
+                : 'border-slate-200 bg-slate-50/40'
+            "
+          >
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-semibold text-slate-900">Conservador</span>
+              <span
+                v-if="userProfile?.risk_profile === 'conservative'"
+                class="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-800"
+              >
+                Tu perfil
+              </span>
+            </div>
+            <p class="mt-2 font-mono text-base font-bold text-blue-700">
+              85% Core / 15% Satellite
+            </p>
+            <p class="mt-1 text-xs text-slate-500">
+              Ej. 85% ETFs amplios (VOO/VTI) y 15% posiciones satélite.
+            </p>
+          </div>
+
+          <div
+            class="rounded-xl border p-4 transition"
+            :class="
+              userProfile?.risk_profile === 'moderate'
+                ? 'border-teal-400 bg-teal-50/50 ring-1 ring-teal-200'
+                : 'border-slate-200 bg-slate-50/40'
+            "
+          >
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-semibold text-slate-900">Moderado</span>
+              <span
+                v-if="userProfile?.risk_profile === 'moderate'"
+                class="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold text-teal-800"
+              >
+                Tu perfil
+              </span>
+            </div>
+            <p class="mt-2 font-mono text-base font-bold text-teal-700">
+              75% Core / 25% Satellite
+            </p>
+            <p class="mt-1 text-xs text-slate-500">
+              Ej. 75% índices base (VOO/VT) y 25% crecimiento sectorial (QQQ/BVL).
+            </p>
+          </div>
+
+          <div
+            class="rounded-xl border p-4 transition"
+            :class="
+              userProfile?.risk_profile === 'aggressive'
+                ? 'border-amber-400 bg-amber-50/50 ring-1 ring-amber-200'
+                : 'border-slate-200 bg-slate-50/40'
+            "
+          >
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-semibold text-slate-900">Agresivo</span>
+              <span
+                v-if="userProfile?.risk_profile === 'aggressive'"
+                class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800"
+              >
+                Tu perfil
+              </span>
+            </div>
+            <p class="mt-2 font-mono text-base font-bold text-amber-700">
+              60% Core / 40% Satellite
+            </p>
+            <p class="mt-1 text-xs text-slate-500">
+              Ej. 60% ETFs núcleo y 40% acciones individuales de alta convicción.
             </p>
           </div>
         </div>

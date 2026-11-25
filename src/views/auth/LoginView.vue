@@ -4,16 +4,25 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '../../composables/useAuth'
 
 const router = useRouter()
-const { login } = useAuth()
+const { login, requestPasswordReset } = useAuth()
 
 const email = ref('')
 const password = ref('')
 
+const isForgotMode = ref(false)
 const loading = ref(false)
 const errorMessage = ref('')
+const successMessage = ref('')
+
+function toggleForgotMode(enable: boolean) {
+  isForgotMode.value = enable
+  errorMessage.value = ''
+  successMessage.value = ''
+}
 
 async function handleLogin() {
   errorMessage.value = ''
+  successMessage.value = ''
 
   if (!email.value || !password.value) {
     errorMessage.value = 'Ingresa tu correo y contraseña.'
@@ -31,6 +40,31 @@ async function handleLogin() {
 
     errorMessage.value =
         'No pudimos iniciar sesión. Verifica tu correo y contraseña.'
+  } finally {
+    loading.value = false
+  }
+}
+
+async function handleRequestReset() {
+  errorMessage.value = ''
+  successMessage.value = ''
+
+  const cleanEmail = email.value.trim()
+  if (!cleanEmail) {
+    errorMessage.value = 'Ingresa tu correo electrónico para enviarte el enlace.'
+    return
+  }
+
+  loading.value = true
+
+  try {
+    await requestPasswordReset(cleanEmail)
+    successMessage.value =
+      'Te enviamos un enlace de recuperación a tu correo. Revisa tu bandeja de entrada o spam.'
+  } catch (error) {
+    console.error('Error al solicitar recuperación:', error)
+    errorMessage.value =
+      'No pudimos enviar el correo de recuperación. Verifica la dirección e intenta nuevamente.'
   } finally {
     loading.value = false
   }
@@ -67,85 +101,165 @@ async function handleLogin() {
       <div
           class="rounded-xl border border-slate-200 bg-white p-8 shadow-sm"
       >
-        <div class="mb-6">
-          <h2 class="text-xl font-semibold text-slate-900">
-            Iniciar sesión
-          </h2>
+        <template v-if="!isForgotMode">
+          <div class="mb-6">
+            <h2 class="text-xl font-semibold text-slate-900">
+              Iniciar sesión
+            </h2>
 
-          <p class="mt-1 text-sm text-slate-500">
-            Ingresa tus datos para acceder a tu cuenta.
+            <p class="mt-1 text-sm text-slate-500">
+              Ingresa tus datos para acceder a tu cuenta.
+            </p>
+          </div>
+
+          <form
+              class="space-y-5"
+              @submit.prevent="handleLogin"
+          >
+            <!-- Email -->
+            <div>
+              <label
+                  for="email"
+                  class="mb-2 block text-sm font-medium text-slate-700"
+              >
+                Correo electrónico
+              </label>
+
+              <input
+                  id="email"
+                  v-model="email"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="correo@ejemplo.com"
+                  class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+              />
+            </div>
+
+            <!-- Contraseña -->
+            <div>
+              <div class="mb-2 flex items-center justify-between">
+                <label
+                    for="password"
+                    class="block text-sm font-medium text-slate-700"
+                >
+                  Contraseña
+                </label>
+
+                <button
+                    type="button"
+                    class="text-xs font-medium text-teal-600 transition hover:text-teal-700 hover:underline"
+                    @click="toggleForgotMode(true)"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
+
+              <input
+                  id="password"
+                  v-model="password"
+                  type="password"
+                  autocomplete="current-password"
+                  placeholder="Ingresa tu contraseña"
+                  class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+              />
+            </div>
+
+            <!-- Error -->
+            <div
+                v-if="errorMessage"
+                class="rounded-lg bg-red-50 px-3 py-2.5 text-sm text-red-700"
+            >
+              {{ errorMessage }}
+            </div>
+
+            <!-- Botón -->
+            <button
+                type="submit"
+                :disabled="loading"
+                class="w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {{ loading ? 'Ingresando...' : 'Iniciar sesión' }}
+            </button>
+          </form>
+
+          <p class="mt-6 text-center text-sm text-slate-500">
+            ¿No tienes una cuenta?
+            <RouterLink
+                to="/register"
+                class="font-medium text-teal-600 hover:text-teal-700"
+            >
+              Regístrate
+            </RouterLink>
           </p>
-        </div>
+        </template>
 
-        <form
-            class="space-y-5"
-            @submit.prevent="handleLogin"
-        >
-          <!-- Email -->
-          <div>
-            <label
-                for="email"
-                class="mb-2 block text-sm font-medium text-slate-700"
+        <!-- Modo Recuperar Contraseña -->
+        <template v-else>
+          <div class="mb-6">
+            <h2 class="text-xl font-semibold text-slate-900">
+              Recuperar contraseña
+            </h2>
+
+            <p class="mt-1 text-sm text-slate-500">
+              Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.
+            </p>
+          </div>
+
+          <form
+              class="space-y-5"
+              @submit.prevent="handleRequestReset"
+          >
+            <div>
+              <label
+                  for="resetEmail"
+                  class="mb-2 block text-sm font-medium text-slate-700"
+              >
+                Correo electrónico
+              </label>
+
+              <input
+                  id="resetEmail"
+                  v-model="email"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="correo@ejemplo.com"
+                  class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+              />
+            </div>
+
+            <div
+                v-if="errorMessage"
+                class="rounded-lg bg-red-50 px-3 py-2.5 text-sm text-red-700"
             >
-              Correo electrónico
-            </label>
+              {{ errorMessage }}
+            </div>
 
-            <input
-                id="email"
-                v-model="email"
-                type="email"
-                autocomplete="email"
-                placeholder="correo@ejemplo.com"
-                class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
-            />
-          </div>
-
-          <!-- Contraseña -->
-          <div>
-            <label
-                for="password"
-                class="mb-2 block text-sm font-medium text-slate-700"
+            <div
+                v-if="successMessage"
+                class="rounded-lg bg-emerald-50 px-3 py-2.5 text-sm text-emerald-700"
             >
-              Contraseña
-            </label>
+              {{ successMessage }}
+            </div>
 
-            <input
-                id="password"
-                v-model="password"
-                type="password"
-                autocomplete="current-password"
-                placeholder="Ingresa tu contraseña"
-                class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
-            />
-          </div>
+            <button
+                type="submit"
+                :disabled="loading"
+                class="w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {{ loading ? 'Enviando enlace...' : 'Enviar enlace de recuperación' }}
+            </button>
+          </form>
 
-          <!-- Error -->
-          <div
-              v-if="errorMessage"
-              class="rounded-lg bg-red-50 px-3 py-2.5 text-sm text-red-700"
-          >
-            {{ errorMessage }}
-          </div>
-
-          <!-- Botón -->
-          <button
-              type="submit"
-              :disabled="loading"
-              class="w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {{ loading ? 'Ingresando...' : 'Iniciar sesión' }}
-          </button>
-        </form>
-
-        <p class="mt-6 text-center text-sm text-slate-500">
-          ¿No tienes una cuenta?
-          <RouterLink
-              to="/register"
-              class="font-medium text-teal-600 hover:text-teal-700"
-          >
-            Regístrate
-          </RouterLink>
-        </p>
+          <p class="mt-6 text-center text-sm text-slate-500">
+            <button
+                type="button"
+                class="font-medium text-teal-600 hover:text-teal-700 hover:underline"
+                @click="toggleForgotMode(false)"
+            >
+              ← Volver a iniciar sesión
+            </button>
+          </p>
+        </template>
       </div>
     </section>
   </main>

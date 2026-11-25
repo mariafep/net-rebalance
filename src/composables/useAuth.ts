@@ -5,6 +5,7 @@ import { authService } from '../services/auth.service'
 
 const user = ref<User | null>(null)
 const loading = ref(true)
+const isRecoveryMode = ref(false)
 let initialized = false
 
 export function useAuth() {
@@ -14,12 +15,24 @@ export function useAuth() {
         initialized = true
         loading.value = true
 
+        if (
+            typeof window !== 'undefined' &&
+            (window.location.hash.includes('type=recovery') ||
+                window.location.search.includes('type=recovery'))
+        ) {
+            isRecoveryMode.value = true
+        }
+
         try {
             const session = await authService.getSession()
             user.value = session?.user ?? null
 
-            supabase.auth.onAuthStateChange((_event, session) => {
+            supabase.auth.onAuthStateChange((event, session) => {
                 user.value = session?.user ?? null
+
+                if (event === 'PASSWORD_RECOVERY') {
+                    isRecoveryMode.value = true
+                }
             })
         } catch (error) {
             console.error('Error al inicializar la sesión:', error)
@@ -48,14 +61,34 @@ export function useAuth() {
     async function logout() {
         await authService.logout()
         user.value = null
+        isRecoveryMode.value = false
+    }
+
+    async function requestPasswordReset(email: string) {
+        await authService.requestPasswordReset(email)
+    }
+
+    async function updatePassword(newPassword: string) {
+        const data = await authService.updatePassword(newPassword)
+        user.value = data.user
+        isRecoveryMode.value = false
+        return data
+    }
+
+    function clearRecoveryMode() {
+        isRecoveryMode.value = false
     }
 
     return {
         user,
         loading,
+        isRecoveryMode,
         initializeAuth,
         login,
         register,
         logout,
+        requestPasswordReset,
+        updatePassword,
+        clearRecoveryMode,
     }
 }

@@ -5,6 +5,9 @@ import { portfolioService } from '../services/portfolio.service'
 import { brokerService } from '../services/broker.service'
 import { assetService } from '../services/asset.service'
 import { priceService } from '../services/price.service'
+import { alertService } from '../services/alert.service'
+import { auditService, type PortfolioAuditResult } from '../services/audit.service'
+import PortfolioAuditModal from '../components/PortfolioAuditModal.vue'
 
 import type { Portfolio } from '../types/portfolio'
 import type { Broker } from '../types/broker'
@@ -19,6 +22,35 @@ const brokers = ref<Broker[]>([])
 const assets = ref<Asset[]>([])
 const portfolioAssets = ref<PortfolioAsset[]>([])
 const latestPrices = ref<LatestAssetPrice[]>([])
+const pendingAlertsCount = ref(0)
+
+// Auditoría IA
+const showAuditModal = ref(false)
+const auditing = ref(false)
+const auditError = ref('')
+const auditResult = ref<PortfolioAuditResult | null>(null)
+
+async function handleRunAudit() {
+  if (!selectedPortfolio.value || selectedPortfolio.value.status !== 'active' || auditing.value) {
+    return
+  }
+
+  showAuditModal.value = true
+  auditing.value = true
+  auditError.value = ''
+
+  try {
+    auditResult.value = await auditService.runPortfolioAudit(selectedPortfolio.value.id)
+  } catch (error) {
+    console.error('Error al auditar portafolio:', error)
+    auditError.value =
+      error instanceof Error
+        ? error.message
+        : 'No se pudo completar la auditoría IA.'
+  } finally {
+    auditing.value = false
+  }
+}
 
 const selectedPortfolioId = ref('')
 
@@ -182,17 +214,20 @@ async function loadDashboard() {
       brokerData,
       assetData,
       latestPriceData,
+      alertsCount,
     ] = await Promise.all([
       portfolioService.getPortfolios(),
       brokerService.getBrokers(),
       assetService.getAssets(),
       priceService.getLatestAssetPrices(),
+      alertService.getPendingAlertsCount().catch(() => 0),
     ])
 
     portfolios.value = portfolioData
     brokers.value = brokerData
     assets.value = assetData
     latestPrices.value = latestPriceData
+    pendingAlertsCount.value = alertsCount
 
     /*
      * Preferimos mostrar inicialmente
@@ -257,6 +292,9 @@ async function loadSelectedPortfolioAssets(
 watch(
     selectedPortfolioId,
     (portfolioId) => {
+      showAuditModal.value = false
+      auditResult.value = null
+      auditError.value = ''
       loadSelectedPortfolioAssets(portfolioId)
     },
 )
@@ -269,14 +307,52 @@ onMounted(() => {
 <template>
   <section>
     <!-- Encabezado -->
-    <div>
-      <h1 class="text-2xl font-semibold text-slate-900">
-        Dashboard
-      </h1>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h1 class="text-2xl font-semibold text-slate-900">
+          Dashboard
+        </h1>
 
-      <p class="mt-1 text-sm text-slate-500">
-        Monitorea la distribución de tus portafolios de inversión.
-      </p>
+        <p class="mt-1 text-sm text-slate-500">
+          Monitorea la distribución de tus portafolios de inversión.
+        </p>
+      </div>
+
+      <!-- Tarjeta de Alertas Pendientes -->
+      <RouterLink
+        to="/alerts"
+        class="flex items-center gap-3 rounded-xl border px-4 py-3 transition"
+        :class="
+          pendingAlertsCount > 0
+            ? 'border-amber-200 bg-amber-50 hover:bg-amber-100/70'
+            : 'border-slate-200 bg-white hover:bg-slate-50'
+        "
+      >
+        <div
+          class="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-bold"
+          :class="
+            pendingAlertsCount > 0
+              ? 'bg-amber-600 text-white'
+              : 'bg-slate-100 text-slate-600'
+          "
+        >
+          {{ pendingAlertsCount }}
+        </div>
+        <div>
+          <p class="text-xs font-medium uppercase tracking-wide text-slate-500">
+            Alertas pendientes
+          </p>
+          <p class="text-sm font-semibold text-slate-900">
+            {{
+              pendingAlertsCount === 0
+                ? 'Todo al día'
+                : pendingAlertsCount === 1
+                  ? '1 alerta por revisar →'
+                  : `${pendingAlertsCount} alertas por revisar →`
+            }}
+          </p>
+        </div>
+      </RouterLink>
     </div>
 
     <!-- Loading -->
@@ -346,26 +422,47 @@ onMounted(() => {
 
         <div
             v-if="selectedPortfolio"
-            class="ml-6 text-right"
+            class="ml-6 flex flex-wrap items-center justify-end gap-4"
         >
-          <span
-              class="inline-flex rounded-full px-3 py-1.5 text-xs font-medium"
-              :class="
-              selectedPortfolio.status === 'active'
-                ? 'bg-emerald-50 text-emerald-700'
-                : 'bg-amber-50 text-amber-700'
-            "
+          <button
+              v-if="selectedPortfolio.status === 'active'"
+              type="button"
+              :disabled="auditing"
+              class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              @click="handleRunAudit"
           >
-            {{
-              selectedPortfolio.status === 'active'
-                  ? 'Activo'
-                  : 'Borrador'
-            }}
-          </span>
+            <svg
+                v-if="auditing"
+                class="h-4 w-4 animate-spin"
+                viewBox="0 0 24 24"
+                fill="none"
+            >
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <span>{{ auditing ? 'Auditando...' : '✨ Auditar portafolio con IA' }}</span>
+          </button>
 
-          <p class="mt-2 text-xs text-slate-400">
-            {{ selectedBroker?.name ?? 'Broker no disponible' }}
-          </p>
+          <div class="text-right">
+            <span
+                class="inline-flex rounded-full px-3 py-1.5 text-xs font-medium"
+                :class="
+                selectedPortfolio.status === 'active'
+                  ? 'bg-emerald-50 text-emerald-700'
+                  : 'bg-amber-50 text-amber-700'
+              "
+            >
+              {{
+                selectedPortfolio.status === 'active'
+                    ? 'Activo'
+                    : 'Borrador'
+              }}
+            </span>
+
+            <p class="mt-2 text-xs text-slate-400">
+              {{ selectedBroker?.name ?? 'Broker no disponible' }}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -773,5 +870,17 @@ onMounted(() => {
         </div>
       </template>
     </template>
+
+    <!-- Modal Auditoría IA -->
+    <PortfolioAuditModal
+      :show="showAuditModal"
+      :portfolio-name="selectedPortfolio?.name ?? 'Portafolio'"
+      :currency="selectedPortfolio?.currency ?? 'USD'"
+      :loading="auditing"
+      :error="auditError"
+      :result="auditResult"
+      @close="showAuditModal = false"
+      @rerun="handleRunAudit"
+    />
   </section>
 </template>
